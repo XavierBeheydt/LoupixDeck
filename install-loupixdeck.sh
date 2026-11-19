@@ -48,12 +48,11 @@ else
     SUDO=""
 fi
 
-# Asks for the password (sudo -v / doas true) and refreshes it during long builds (sudo -n true /
-# doas -n true). doas only caches the password when 'persist' is set in doas.conf; without it,
-# each privileged step asks again.
+# Asks for the administrator password.
 sudo_validate() {
     { [ "$SUDO" = doas ] && doas true; } || { [ "$SUDO" = sudo ] && sudo -v; }
 }
+# Keeps the credentials fresh during long builds.
 sudo_refresh() {
     { [ "$SUDO" = doas ] && doas -n true; } || { [ "$SUDO" = sudo ] && sudo -n true; }
 }
