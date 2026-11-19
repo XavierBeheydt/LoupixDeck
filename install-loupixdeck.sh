@@ -36,23 +36,19 @@ require() { command -v "$1" >/dev/null 2>&1 || die "Required tool missing: $1"; 
 # ---------- root / sudo ----------
 # sudo or doas (the OpenBSD-style tool used by some minimal distributions). Both run the
 # commands below the same way, but doas has no 'sudo -v' to check the password up front.
-if [ "$(id -u)" -ne 0 ]; then
-    if command -v sudo >/dev/null 2>&1; then
-        SUDO="sudo"
-    elif command -v doas >/dev/null 2>&1; then
-        SUDO="doas"
-    else
-        die "Please run as root or install sudo or doas."
-    fi
-else
-    SUDO=""
-fi
+SUDO=""
+[ "$(id -u)" -eq 0 ] || { command -v sudo >/dev/null 2>&1 && SUDO="sudo" || { command -v doas >/dev/null 2>&1 && SUDO="doas"; }; }
+[ "$(id -u)" -eq 0 ] || [ -n "$SUDO" ] || die "Please run as root or install sudo or doas."
 
 # Asks for the password (sudo -v / doas true) and refreshes it during long builds (sudo -n true /
 # doas -n true). doas only caches the password when 'persist' is set in doas.conf; without it,
 # each privileged step asks again.
-sudo_validate() { if [ "$SUDO" = doas ]; then doas true; else sudo -v; fi; }
-sudo_refresh()  { if [ "$SUDO" = doas ]; then doas -n true; else sudo -n true; fi; }
+sudo_validate() {
+    { [ "$SUDO" = doas ] && doas true; } || { [ "$SUDO" = sudo ] && sudo -v; }
+}
+sudo_refresh() {
+    { [ "$SUDO" = doas ] && doas -n true; } || { [ "$SUDO" = sudo ] && sudo -n true; }
+}
 
 # ---------- Target user ----------
 # The user the app runs as: the one who gets the 'input' group and owns the plugin folder.
